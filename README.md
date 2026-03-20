@@ -80,3 +80,13 @@ The widget color-codes values:
 - **Green** — messages remaining / available
 - **Yellow** — reset / renewal times
 - **White** — other stats
+
+---
+
+## Security & Privacy
+
+- The extension **only runs on `claude.ai/settings/usage`** — it has no access to your conversations or any other pages.
+- **No credentials are read or stored.** It reads usage numbers (message count, reset time, plan name) from the page you're already viewing.
+- All data stays **local to your machine** — it is POSTed to `localhost:7899` only, never to any external server.
+- The widget caches the last result in `~/.claude_widget/last_usage.json` on your local disk.
+- The full source code is in this repo — load it as an unpacked extension so your browser shows you exactly what runs.
