@@ -1,0 +1,5 @@
+# Claude Code local settings
+.claude/
+
+# Debug screenshots
+claude-widget/errors/
