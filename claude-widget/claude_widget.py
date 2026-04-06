@@ -16,7 +16,7 @@ import threading
 import json
 import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 try:
@@ -258,6 +258,10 @@ class ClaudeWidget:
 # ══════════════════════════════════════════════════════════════════════════════
 
 _WANTED = {
+    # ── Current API: five_hour / seven_day rate limits ─────────────────────
+    "five_hour_used_percentage":  "5-hr Used",
+    "seven_day_used_percentage":  "Weekly Used",
+    # ── Legacy / generic fields ────────────────────────────────────────────
     "messages_used":      "Messages Used",
     "messages_limit":     "Message Limit",
     "messages_remaining": "Messages Remaining",
@@ -288,13 +292,23 @@ def parse_payload(raw: dict) -> dict:
             kl = raw_key.lower().replace(".", "_").replace("-", "_").replace(" ", "_")
             for fragment, label in _WANTED.items():
                 if fragment in kl and label not in result:
-                    if isinstance(value, str) and re.search(r"\d{4}-\d{2}-\d{2}T", value):
+                    v = value
+                    if isinstance(v, str) and re.search(r"\d{4}-\d{2}-\d{2}T", v):
                         try:
-                            dt    = datetime.fromisoformat(value.rstrip("Z"))
-                            value = dt.strftime("%b %d %H:%M")
+                            dt = datetime.fromisoformat(v.rstrip("Z")).replace(tzinfo=timezone.utc)
+                            v  = dt.astimezone().strftime("%b %d %H:%M")
                         except Exception:
                             pass
-                    result[label] = value
+                    elif isinstance(v, (int, float)) and 1_000_000_000 < v < 9_999_999_999:
+                        # Unix epoch seconds (resets_at)
+                        try:
+                            dt = datetime.fromtimestamp(int(v))
+                            v  = dt.strftime("%b %d %H:%M")
+                        except Exception:
+                            pass
+                    elif "percentage" in fragment and isinstance(v, (int, float)):
+                        v = f"{int(v)}%"
+                    result[label] = v
                     break
 
     dom = raw.get("dom", {})

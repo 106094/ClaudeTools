@@ -17,25 +17,26 @@
     const text = document.body?.innerText || '';
     const out  = {};
 
-    // Current session % used  e.g. "43% used"
-    const sessionPct = text.match(/Current session[\s\S]{0,80}?(\d+)%\s*used/i);
-    if (sessionPct) out['Session Used'] = sessionPct[1] + '%';
+    // 5-hour rolling window %  e.g. "5-hour rolling window ... 43%"
+    // Also handles old "Current session" label as fallback
+    const fiveHrPct = text.match(/5.hour[\s\S]{0,150}?(\d+)%/i)
+                   || text.match(/Current session[\s\S]{0,80}?(\d+)%/i);
+    if (fiveHrPct) out['5-hr Used'] = fiveHrPct[1] + '%';
 
-    // Session reset  e.g. "Resets in 2 hr 46 min"
-    const sessionReset = text.match(/Resets in ([\d]+ hr[\s\d\w]*)/i);
-    if (sessionReset) out['Session Resets'] = 'in ' + sessionReset[1].trim();
+    // 5-hour reset — capture full text e.g. "Resets in 2 hr 46 min"
+    const fiveHrReset = text.match(/([Rr]esets?\s+in\s+[\d]+\s*hr[^\n]*)/i);
+    if (fiveHrReset) out['5-hr Resets'] = fiveHrReset[1].trim();
 
-    // Weekly all-models % used (second "% used" occurrence)
-    const allPcts = [...text.matchAll(/(\d+)%\s*used/gi)];
-    if (allPcts.length >= 2) out['Weekly Used'] = allPcts[1][1] + '%';
-    else if (allPcts.length === 1) out['Weekly Used'] = allPcts[0][1] + '%';
+    // Weekly usage %  e.g. "weekly ... 67%"
+    const weeklyPct = text.match(/week(?:ly)?[\s\S]{0,150}?(\d+)%/i);
+    if (weeklyPct) out['Weekly Used'] = weeklyPct[1] + '%';
 
-    // Weekly reset day  e.g. "Resets Tue 10:00 AM"
-    const weeklyReset = text.match(/Resets\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([\d:]+\s*[AP]M)/i);
-    if (weeklyReset) out['Weekly Resets'] = weeklyReset[1] + ' ' + weeklyReset[2];
+    // Weekly reset — capture full text e.g. "Resets Mon 10:00 PM"
+    const weeklyReset = text.match(/([Rr]esets?\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[\d:]+\s*[AP]M)/i);
+    if (weeklyReset) out['Weekly Resets'] = weeklyReset[1].trim();
 
-    // Plan
-    const plan = text.match(/\b(Pro|Free|Team|Enterprise)\b/i);
+    // Plan (added Max for Claude Max plan)
+    const plan = text.match(/\b(Pro|Max|Free|Team|Enterprise)\b/i);
     if (plan) out['Plan'] = plan[1];
 
     return out;
